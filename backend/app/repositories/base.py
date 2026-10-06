@@ -1,0 +1,49 @@
+"""Interfacce dei repository. Due implementazioni: MongoDB (produzione) e in-memory (sviluppo/test)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Protocol
+
+from app.models.events import TrackEvent
+from app.models.finder import FinderDefinition, FinderSession
+from app.models.product import Product, ProviderSnapshot
+
+
+class ProductRepository(Protocol):
+    async def get(self, product_id: str) -> Product | None: ...
+    async def get_many(self, product_ids: list[str]) -> list[Product]: ...
+    async def list_by_category(self, category: str, *, skip: int = 0, limit: int = 50) -> list[Product]: ...
+    async def all_in_category(self, category: str) -> list[Product]: ...
+    async def count_by_category(self, category: str) -> int: ...
+    async def upsert_many(self, products: list[Product]) -> int: ...
+
+
+class SnapshotRepository(Protocol):
+    async def get_valid(self, asins: list[str], marketplace: str) -> list[ProviderSnapshot]: ...
+    async def save_many(self, snapshots: list[ProviderSnapshot]) -> None: ...
+
+
+class FinderRepository(Protocol):
+    async def get(self, slug: str) -> FinderDefinition | None: ...
+    async def list_published(self) -> list[FinderDefinition]: ...
+    async def upsert(self, finder: FinderDefinition) -> None: ...
+
+
+class SessionRepository(Protocol):
+    async def get(self, session_id: str) -> FinderSession | None: ...
+    async def save(self, session: FinderSession) -> None: ...
+
+
+class EventRepository(Protocol):
+    async def add(self, event: TrackEvent) -> None: ...
+    async def count_by_type(self) -> dict[str, int]: ...
+
+
+@dataclass
+class Repositories:
+    products: ProductRepository
+    snapshots: SnapshotRepository
+    finders: FinderRepository
+    sessions: SessionRepository
+    events: EventRepository
