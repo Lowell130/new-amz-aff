@@ -49,3 +49,26 @@ def test_events_are_sanitized_and_admin_protected(client):
     assert client.get("/api/admin/stats").status_code == 401
     stats = client.get("/api/admin/stats", headers={"X-Admin-Token": "segreto"}).json()
     assert stats["events"]["affiliate_link_clicked"] == 1
+
+
+def test_configurator_api(client):
+    assert client.get("/api/configurators").json()[0]["slug"] == "kit-trekking"
+    detail = client.get("/api/configurators/kit-trekking").json()
+    assert [q["id"] for q in detail["inputs"]][0] == "use"
+    body = {"answers": {"use": "day_hike", "experience": "beginner", "weather": "mixed", "budget": 450}}
+    r = client.post("/api/configurators/kit-trekking/build", json=body)
+    assert r.status_code == 200, r.text
+    cfg = r.json()
+    assert cfg["total_valid"] <= 450 and cfg["items"]
+    item = next(i for i in cfg["items"] if i["downgrade"] or i["upgrade"])
+    alt = item["downgrade"] or item["upgrade"]
+    r2 = client.post(f"/api/configuration/{cfg['session_id']}/swap",
+                     json={"component_key": item["component_key"], "product_id": alt["product"]["id"]})
+    assert r2.status_code == 200, r2.text
+    assert client.get(f"/api/configuration/{cfg['session_id']}").status_code == 200
+
+
+def test_configurator_budget_too_low(client):
+    r = client.post("/api/configurators/kit-trekking/build", json={"answers": {"use": "multi_day", "experience": "beginner", "weather": "dry", "budget": 100}})
+    assert r.status_code == 422
+    assert "servono almeno" in r.json()["detail"]

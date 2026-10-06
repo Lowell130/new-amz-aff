@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { FinderSummary } from '~/types/api'
+import type { ConfiguratorSummary, FinderSummary } from '~/types/api'
 
 const api = useApi()
 const config = useRuntimeConfig()
 const { data: finders } = await useAsyncData('finders', () => api.get<FinderSummary[]>('/api/finders'))
+const { data: configurators } = await useAsyncData('configurators', () =>
+  api.get<ConfiguratorSummary[]>('/api/configurators'),
+)
 
 useSeoMeta({
   title: `${config.public.siteName} · Scopri cosa comprare in base a come lo userai`,
@@ -32,7 +35,17 @@ useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/` }] })
       >
         <h2 class="text-xl font-semibold group-hover:text-brand-700">{{ f.title }}</h2>
         <p class="mt-2 text-stone-600">{{ f.short_description }}</p>
-        <span class="mt-4 inline-block font-semibold text-brand-600">Inizia →</span>
+        <span class="mt-4 inline-block font-semibold text-brand-600">Trova il prodotto giusto →</span>
+      </NuxtLink>
+      <NuxtLink
+        v-for="c in configurators ?? []"
+        :key="c.slug"
+        :to="`/configura/${c.slug}`"
+        class="group rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition hover:border-brand-500"
+      >
+        <h2 class="text-xl font-semibold group-hover:text-brand-700">{{ c.title }}</h2>
+        <p class="mt-2 text-stone-600">{{ c.short_description }}</p>
+        <span class="mt-4 inline-block font-semibold text-brand-600">Componi il kit →</span>
       </NuxtLink>
     </section>
   </div>

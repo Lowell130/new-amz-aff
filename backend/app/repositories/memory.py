@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
 from app.models.product import Product, ProviderSnapshot, utcnow
@@ -80,6 +81,32 @@ class MemorySessionRepository:
         self._items[session.session_id] = session.model_copy(deep=True)
 
 
+class MemoryConfiguratorRepository:
+    def __init__(self) -> None:
+        self._items: dict[str, ConfigurationTemplate] = {}
+
+    async def get(self, slug: str) -> ConfigurationTemplate | None:
+        return self._items.get(slug)
+
+    async def list_published(self) -> list[ConfigurationTemplate]:
+        return [t for t in self._items.values() if t.published]
+
+    async def upsert(self, template: ConfigurationTemplate) -> None:
+        self._items[template.slug] = template
+
+
+class MemoryConfigSessionRepository:
+    def __init__(self) -> None:
+        self._items: dict[str, ConfigurationSession] = {}
+
+    async def get(self, session_id: str) -> ConfigurationSession | None:
+        s = self._items.get(session_id)
+        return s.model_copy(deep=True) if s else None
+
+    async def save(self, session: ConfigurationSession) -> None:
+        self._items[session.session_id] = session.model_copy(deep=True)
+
+
 class MemoryEventRepository:
     def __init__(self) -> None:
         self.items: list[TrackEvent] = []
@@ -98,4 +125,6 @@ def memory_repositories() -> Repositories:
         finders=MemoryFinderRepository(),
         sessions=MemorySessionRepository(),
         events=MemoryEventRepository(),
+        configurators=MemoryConfiguratorRepository(),
+        config_sessions=MemoryConfigSessionRepository(),
     )

@@ -13,9 +13,9 @@ from app.providers.base import ProductProvider
 from app.providers.mock import MockProductProvider
 from app.repositories.base import Repositories
 from app.repositories.memory import memory_repositories
-from app.seed import trekking
-from app.seed.loader import seed_demo
+from app.seed.loader import demo_catalog, seed_demo
 from app.services.affiliate import AffiliateLinkService
+from app.services.configurator import ConfiguratorService
 from app.services.finder import FinderService
 from app.services.product_data import ProductDataService
 
@@ -30,6 +30,7 @@ class Container:
     affiliate: AffiliateLinkService
     product_data: ProductDataService
     finder: FinderService
+    configurator: ConfiguratorService
     llm: LLMProvider
     _closers: list[Any] = field(default_factory=list)
 
@@ -50,7 +51,7 @@ def build_provider(settings: Settings) -> ProductProvider:
             partner_tag=settings.amazon_partner_tag,
         )
     # Il mock conosce il catalogo demo per generare prezzi plausibili.
-    return MockProductProvider(trekking.generate_products(), ttl_hours=settings.provider_cache_ttl_hours)
+    return MockProductProvider(demo_catalog(), ttl_hours=settings.provider_cache_ttl_hours)
 
 
 async def build_container(settings: Settings, repos: Repositories | None = None) -> Container:
@@ -82,6 +83,7 @@ async def build_container(settings: Settings, repos: Repositories | None = None)
         affiliate=affiliate,
         product_data=product_data,
         finder=FinderService(repos, product_data),
+        configurator=ConfiguratorService(repos, product_data),
         llm=NullLLMProvider(),
         _closers=closers,
     )

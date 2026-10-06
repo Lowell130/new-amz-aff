@@ -20,6 +20,7 @@ from app.models.finder import (
     Explainability,
     FinderDefinition,
     PriorityRule,
+    ScoringConfig,
     Requirement,
     ScoredProduct,
     UserProfile,
@@ -73,9 +74,11 @@ def _fmt_value(v: Any) -> str:
 
 
 class ScoringEngine:
-    def __init__(self, finder: FinderDefinition):
-        self.finder = finder
-        self.rules: dict[str, PriorityRule] = {r.key: r for r in finder.priority_rules}
+    def __init__(self, config: FinderDefinition | ScoringConfig):
+        if isinstance(config, FinderDefinition):
+            config = config.scoring_config()
+        self.cfg = config
+        self.rules: dict[str, PriorityRule] = {r.key: r for r in config.priority_rules}
 
     # ------------------------------------------------------------------ API
     def rank(self, profile: UserProfile, views: list[ProductView]) -> RankingOutput:
@@ -101,7 +104,7 @@ class ScoringEngine:
                 return f"vincolo obbligatorio non rispettato: {req.label}"
         price = v.ranking_price
         if profile.budget_max and price is not None:
-            if price > profile.budget_max * (1 + self.finder.budget_tolerance):
+            if price > profile.budget_max * (1 + self.cfg.budget_tolerance):
                 return "fuori budget"
         if profile.use_cases and all(u in p.unsuitable_for for u in profile.use_cases):
             return "non adatto all'uso indicato"
@@ -148,7 +151,7 @@ class ScoringEngine:
             ex.matched.append("budget")
         else:
             over = price - profile.budget_max
-            tol = profile.budget_max * self.finder.budget_tolerance or 1
+            tol = profile.budget_max * self.cfg.budget_tolerance or 1
             comps["budget"] = max(0.0, 1 - over / tol)
             if is_estimate:
                 ex.penalties.append("Potrebbe superare leggermente il tuo budget")
@@ -159,7 +162,7 @@ class ScoringEngine:
         if profile.use_cases:
             hit = [u for u in profile.use_cases if u in p.use_cases]
             comps["use_case"] = len(hit) / len(profile.use_cases)
-            labels = self.finder.use_case_labels
+            labels = self.cfg.use_case_labels
             if hit:
                 ex.reasons.append("Adatta a: " + ", ".join(labels.get(u, u).lower() for u in hit))
                 ex.matched.append("uso")
@@ -171,7 +174,7 @@ class ScoringEngine:
 
         # --- esperienza
         if profile.experience and p.levels:
-            lbl = self.finder.experience_labels.get(profile.experience, profile.experience)
+            lbl = self.cfg.experience_labels.get(profile.experience, profile.experience)
             if profile.experience in p.levels:
                 comps["experience"] = 1.0
                 ex.reasons.append(f"Indicata per il livello {lbl.lower()}")
@@ -188,7 +191,7 @@ class ScoringEngine:
 
         # --- priorità
         if profile.priorities:
-            vals = []
+            vals: list[tuple[float, float]] = []  # (punteggio, peso)
             for key in profile.priorities:
                 rule = self.rules.get(key)
                 if not rule:
@@ -196,19 +199,21 @@ class ScoringEngine:
                 total_data += 1
                 raw = p.attributes.get(rule.attr)
                 s = self._rule_score(rule, raw, ranges)
+                pw = profile.priority_weights.get(key, 1.0)
                 if s is None:
-                    vals.append(0.3)
+                    vals.append((0.3, pw))
                     ex.missing_features.append(f"{rule.label}: dato non disponibile")
                     continue
                 known += 1
-                vals.append(s)
+                vals.append((s, pw))
                 text = rule.reason_template.format(value=_fmt_value(raw), unit=rule.unit or "").strip()
                 if s >= 0.66:
                     ex.reasons.append(text)
                     ex.matched.append(rule.label)
                 elif s <= 0.33:
                     ex.weak_matches.append(f"{rule.label}: non è il suo punto di forza")
-            comps["priorities"] = sum(vals) / len(vals) if vals else 1.0
+            wsum_p = sum(w_ for _, w_ in vals)
+            comps["priorities"] = sum(s_ * w_ for s_, w_ in vals) / wsum_p if wsum_p else 1.0
         else:
             comps["priorities"] = 1.0
 
@@ -240,14 +245,14 @@ class ScoringEngine:
             comps["requirements"] = 1.0
 
         # --- combinazione pesata
-        w = self.finder.weights.model_dump()
+        w = self.cfg.weights.model_dump()
         wsum = sum(w.values()) or 1
         score = 100 * sum(comps[k] * w[k] for k in w) / wsum
 
         partial_bad = [u for u in profile.use_cases if u in p.unsuitable_for]
         for u in partial_bad:
             score -= UNSUITABLE_PENALTY
-            ex.penalties.append(f"Sconsigliata per: {self.finder.use_case_labels.get(u, u).lower()}")
+            ex.penalties.append(f"Sconsigliata per: {self.cfg.use_case_labels.get(u, u).lower()}")
         if v.offer and v.offer.is_valid() and v.offer.price is None:
             score -= UNAVAILABLE_PENALTY
             ex.penalties.append("Al momento risulta non disponibile")

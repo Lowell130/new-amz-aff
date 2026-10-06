@@ -106,3 +106,62 @@ export interface FinderDetail extends FinderSummary {
   attribute_labels: Record<string, string>
   use_case_labels: Record<string, string>
 }
+
+// ------------------------------------------------------------------ configuratore
+export interface ComponentOut {
+  key: string
+  label: string
+  required: boolean
+  why?: string | null
+  attribute_labels: Record<string, string>
+}
+
+export interface ConfiguratorSummary {
+  slug: string
+  title: string
+  short_description: string
+  components: number
+}
+
+export interface ConfiguratorDetail {
+  slug: string
+  title: string
+  short_description: string
+  seo: { title: string; description: string; h1: string; intro: string }
+  inputs: QuestionOut[]
+  components: ComponentOut[]
+}
+
+export interface AlternativeOut {
+  product: ProductCard
+  score: number
+  price_delta: number | null
+  price_is_estimate: boolean
+}
+
+export interface ConfigItemOut {
+  component_key: string
+  label: string
+  required: boolean
+  why: string | null
+  score: number
+  confidence: 'alta' | 'media' | 'bassa'
+  explain: Explainability
+  product: ProductCard
+  upgrade: AlternativeOut | null
+  downgrade: AlternativeOut | null
+}
+
+export interface ConfigurationOut {
+  session_id: string
+  template_slug: string
+  budget: number
+  profile: ResultOut['profile']
+  items: ConfigItemOut[]
+  skipped: { component_key: string; label: string; reason: string }[]
+  total_valid: number
+  missing_prices: number
+  residual: number | null
+  over_budget: boolean
+  generated_at: string
+}

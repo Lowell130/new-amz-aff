@@ -95,6 +95,16 @@ class ScoringWeights(BaseModel):
     requirements: float = 0.10
 
 
+class ScoringConfig(BaseModel):
+    """Tutto ciò che serve al motore di scoring (usato da Finder e Configuratore)."""
+
+    priority_rules: list[PriorityRule] = Field(default_factory=list)
+    use_case_labels: dict[str, str] = Field(default_factory=dict)
+    experience_labels: dict[str, str] = Field(default_factory=dict)
+    weights: ScoringWeights = Field(default_factory=ScoringWeights)
+    budget_tolerance: float = 0.15
+
+
 class FinderSEO(BaseModel):
     title: str
     description: str
@@ -119,6 +129,15 @@ class FinderDefinition(BaseModel):
     seo: FinderSEO
     published: bool = True
 
+    def scoring_config(self) -> ScoringConfig:
+        return ScoringConfig(
+            priority_rules=self.priority_rules,
+            use_case_labels=self.use_case_labels,
+            experience_labels=self.experience_labels,
+            weights=self.weights,
+            budget_tolerance=self.budget_tolerance,
+        )
+
 
 class UserProfile(BaseModel):
     budget_min: float | None = None
@@ -127,6 +146,8 @@ class UserProfile(BaseModel):
     use_cases: list[str] = Field(default_factory=list)
     priorities: list[str] = Field(default_factory=list)
     requirements: list[Requirement] = Field(default_factory=list)
+    # peso relativo delle priorità (default 1). Il configuratore dà peso 2 a quelle dell'utente.
+    priority_weights: dict[str, float] = Field(default_factory=dict)
 
 
 class Explainability(BaseModel):

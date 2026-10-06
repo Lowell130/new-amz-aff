@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
 from app.models.product import Product, ProviderSnapshot
@@ -35,6 +36,17 @@ class SessionRepository(Protocol):
     async def save(self, session: FinderSession) -> None: ...
 
 
+class ConfiguratorRepository(Protocol):
+    async def get(self, slug: str) -> ConfigurationTemplate | None: ...
+    async def list_published(self) -> list[ConfigurationTemplate]: ...
+    async def upsert(self, template: ConfigurationTemplate) -> None: ...
+
+
+class ConfigSessionRepository(Protocol):
+    async def get(self, session_id: str) -> ConfigurationSession | None: ...
+    async def save(self, session: ConfigurationSession) -> None: ...
+
+
 class EventRepository(Protocol):
     async def add(self, event: TrackEvent) -> None: ...
     async def count_by_type(self) -> dict[str, int]: ...
@@ -47,3 +59,5 @@ class Repositories:
     finders: FinderRepository
     sessions: SessionRepository
     events: EventRepository
+    configurators: ConfiguratorRepository
+    config_sessions: ConfigSessionRepository

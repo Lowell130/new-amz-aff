@@ -7,6 +7,7 @@ from typing import Any
 from pymongo import ReplaceOne
 from pymongo.asynchronous.database import AsyncDatabase
 
+from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
 from app.models.product import Product, ProviderSnapshot, utcnow
@@ -99,6 +100,34 @@ class MongoSessionRepository:
         await self.col.replace_one({"session_id": session.session_id}, session.model_dump(), upsert=True)
 
 
+class MongoConfiguratorRepository:
+    def __init__(self, db: AsyncDatabase):
+        self.col = db.configuration_templates
+
+    async def get(self, slug: str) -> ConfigurationTemplate | None:
+        doc = _strip_id(await self.col.find_one({"slug": slug}))
+        return ConfigurationTemplate.model_validate(doc) if doc else None
+
+    async def list_published(self) -> list[ConfigurationTemplate]:
+        docs = await self.col.find({"published": True}).to_list(None)
+        return [ConfigurationTemplate.model_validate(_strip_id(d)) for d in docs]
+
+    async def upsert(self, template: ConfigurationTemplate) -> None:
+        await self.col.replace_one({"slug": template.slug}, template.model_dump(by_alias=True), upsert=True)
+
+
+class MongoConfigSessionRepository:
+    def __init__(self, db: AsyncDatabase):
+        self.col = db.configuration_sessions
+
+    async def get(self, session_id: str) -> ConfigurationSession | None:
+        doc = _strip_id(await self.col.find_one({"session_id": session_id}))
+        return ConfigurationSession.model_validate(doc) if doc else None
+
+    async def save(self, session: ConfigurationSession) -> None:
+        await self.col.replace_one({"session_id": session.session_id}, session.model_dump(), upsert=True)
+
+
 class MongoEventRepository:
     def __init__(self, db: AsyncDatabase):
         self.col = db.click_events
@@ -118,4 +147,6 @@ def mongo_repositories(db: AsyncDatabase) -> Repositories:
         finders=MongoFinderRepository(db),
         sessions=MongoSessionRepository(db),
         events=MongoEventRepository(db),
+        configurators=MongoConfiguratorRepository(db),
+        config_sessions=MongoConfigSessionRepository(db),
     )

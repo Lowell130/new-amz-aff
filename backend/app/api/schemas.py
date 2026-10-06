@@ -149,3 +149,78 @@ class Page(BaseModel):
     page: int
     page_size: int
     total: int
+
+
+# ------------------------------------------------------------------ configuratore
+class ComponentOut(BaseModel):
+    key: str
+    label: str
+    required: bool
+    why: str | None = None
+    attribute_labels: dict[str, str] = Field(default_factory=dict)
+
+
+class ConfiguratorSummary(BaseModel):
+    slug: str
+    title: str
+    short_description: str
+    components: int
+
+
+class ConfiguratorDetail(BaseModel):
+    slug: str
+    title: str
+    short_description: str
+    seo: dict[str, Any]
+    inputs: list[QuestionOut]
+    components: list[ComponentOut]
+
+
+class BuildIn(BaseModel):
+    answers: dict[str, Any] = Field(default_factory=dict)
+    include_optional: list[str] | None = None
+
+
+class SwapIn(BaseModel):
+    component_key: str = Field(max_length=64)
+    product_id: str = Field(max_length=200)
+
+
+class AlternativeOut(BaseModel):
+    product: ProductCard
+    score: float
+    price_delta: float | None  # differenza di prezzo rispetto al prodotto attuale
+    price_is_estimate: bool
+
+
+class ConfigItemOut(BaseModel):
+    component_key: str
+    label: str
+    required: bool
+    why: str | None
+    score: float
+    confidence: str
+    explain: Explainability
+    product: ProductCard
+    upgrade: AlternativeOut | None
+    downgrade: AlternativeOut | None
+
+
+class SkippedOut(BaseModel):
+    component_key: str
+    label: str
+    reason: str
+
+
+class ConfigurationOut(BaseModel):
+    session_id: str
+    template_slug: str
+    budget: float
+    profile: ProfileSummary
+    items: list[ConfigItemOut]
+    skipped: list[SkippedOut]
+    total_valid: float  # somma dei soli prezzi aggiornati
+    missing_prices: int
+    residual: float | None  # solo se tutti i prezzi sono aggiornati
+    over_budget: bool
+    generated_at: datetime

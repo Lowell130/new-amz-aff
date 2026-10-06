@@ -5,9 +5,9 @@ Amazon è il canale di monetizzazione (link affiliati conformi), non il cuore de
 
 Stack: **Nuxt 4 + Tailwind 4** (frontend SSR) · **FastAPI + PyMongo Async** (backend) · **MongoDB**.
 
-> Stato: MVP con le Fasi 1–6 della roadmap (vedi `docs/ROADMAP.md`).
-> Funziona **senza credenziali Amazon e senza MongoDB**: catalogo demo di 120 scarpe da trekking
-> sintetiche (marchi inventati) e prezzi simulati.
+> Stato: Fasi 1–7 della roadmap: Product Finder e Configuratore kit (vedi `docs/ROADMAP.md`).
+> Funziona **senza credenziali Amazon e senza MongoDB**: catalogo demo di 195 prodotti sintetici
+> (scarpe, zaini, giacche, bastoncini, frontali; marchi inventati) e prezzi simulati.
 
 ## Avvio rapido (Windows / PowerShell)
 
@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-Apri http://localhost:3000 → "Scarpe da trekking" → Inizia.
+Apri http://localhost:3000 → "Scarpe da trekking" (Product Finder) oppure "Kit trekking" (Configuratore).
 
 ### 3. (Opzionale) MongoDB reale
 
@@ -57,7 +57,8 @@ pytest
 
 I test coprono: motore di scoring (20 profili diversi, nessun vincitore fisso, motivazioni basate sui dati),
 flusso del questionario (domande condizionali, modifica risposte), link affiliati, cache con scadenza 24h,
-funzionamento senza provider, API end-to-end.
+funzionamento senza provider, configuratore (budget mai superato, incompatibilità, riproducibilità,
+kit diversi al variare del budget, sostituzioni), API end-to-end.
 
 ## Struttura
 
@@ -69,14 +70,14 @@ backend/app
   models/         modelli di dominio (prodotto, finder, eventi)
   repositories/   accesso dati: MongoDB e in-memory
   providers/      ProductProvider: Mock (attivo) e Amazon Creators (Fase 11)
-  scoring/        motore di scoring, logica questionario, selezione risultati
+  scoring/        motore di scoring, logica questionario, selezione risultati, configuratore
   services/       finder, dati prodotto/cache, AffiliateLinkService
   ai/             interfaccia LLM astratta (Fase 8)
-  seed/           dataset demo trekking
+  seed/           dataset demo trekking (finder + kit)
 frontend/app
-  pages/          /, /trova/[slug], /come-scegliere/[slug], informativa
-  components/     finder/*, recommendation/*, AffiliateDisclosure
-  composables/    useApi, useFinder, useTrack
+  pages/          /, /trova/[slug], /configura/[slug], /come-scegliere/[slug], informativa
+  components/     finder/*, configurator/*, recommendation/*, ProductPriceCta, AffiliateDisclosure
+  composables/    useApi, useFinder, useConfigurator, useTrack
 ```
 
 ## Regole di conformità già implementate

@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import finder, misc
+from app.api.routes import configurator, finder, misc
 from app.core.config import Settings, get_settings
 from app.core.container import build_container
 from app.repositories.base import Repositories
@@ -43,6 +43,7 @@ def create_app(settings: Settings | None = None, repos: Repositories | None = No
     )
     app.include_router(misc.router)
     app.include_router(finder.router)
+    app.include_router(configurator.router)
     return app
 
 
