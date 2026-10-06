@@ -84,10 +84,23 @@ class FinderService:
         await self.repos.sessions.save(s)
         return StepState(s, flow.next_question(finder, s.answers), flow.progress(finder, s.answers))
 
-    async def complete(self, session_id: str) -> FinderSession:
+    async def create_completed(self, slug: str, answers: dict[str, Any]) -> FinderSession:
+        """Usato dall'AI Advisor: crea una sessione già compilata (anche parzialmente) e la completa."""
+        finder = await self.get_finder(slug)
+        clean: dict[str, Any] = {}
+        for q in sorted(finder.questions, key=lambda q: q.order):
+            if q.id in answers and q.id in {x.id for x in flow.visible_questions(finder, clean)}:
+                clean[q.id] = flow.validate_answer(q, answers[q.id])
+        now = utcnow()
+        s = FinderSession(session_id=secrets.token_urlsafe(16), finder_slug=slug, answers=clean,
+                          created_at=now, updated_at=now)
+        await self.repos.sessions.save(s)
+        return await self.complete(s.session_id, allow_partial=True)
+
+    async def complete(self, session_id: str, allow_partial: bool = False) -> FinderSession:
         s, finder = await self.get_session(session_id)
         missing = [q.id for q in flow.visible_questions(finder, s.answers) if q.required and q.id not in s.answers]
-        if missing:
+        if missing and not allow_partial:
             raise Incomplete(f"Mancano risposte obbligatorie: {', '.join(missing)}")
 
         profile = flow.build_profile(finder, s.answers)

@@ -7,6 +7,7 @@ from typing import Any
 from pymongo import ReplaceOne
 from pymongo.asynchronous.database import AsyncDatabase
 
+from app.models.advisor import AdvisorSession
 from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
@@ -128,6 +129,18 @@ class MongoConfigSessionRepository:
         await self.col.replace_one({"session_id": session.session_id}, session.model_dump(), upsert=True)
 
 
+class MongoAdvisorSessionRepository:
+    def __init__(self, db: AsyncDatabase):
+        self.col = db.advisor_sessions
+
+    async def get(self, session_id: str) -> AdvisorSession | None:
+        doc = _strip_id(await self.col.find_one({"session_id": session_id}))
+        return AdvisorSession.model_validate(doc) if doc else None
+
+    async def save(self, session: AdvisorSession) -> None:
+        await self.col.replace_one({"session_id": session.session_id}, session.model_dump(), upsert=True)
+
+
 class MongoEventRepository:
     def __init__(self, db: AsyncDatabase):
         self.col = db.click_events
@@ -149,4 +162,5 @@ def mongo_repositories(db: AsyncDatabase) -> Repositories:
         events=MongoEventRepository(db),
         configurators=MongoConfiguratorRepository(db),
         config_sessions=MongoConfigSessionRepository(db),
+        advisor_sessions=MongoAdvisorSessionRepository(db),
     )

@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.ai.advisor_llm import AdvisorLLM
 from app.ai.base import LLMProvider, NullLLMProvider
 from app.core.config import Settings
 from app.providers.amazon_creators import AmazonCreatorsProvider
@@ -15,6 +16,7 @@ from app.repositories.base import Repositories
 from app.repositories.memory import memory_repositories
 from app.seed.loader import demo_catalog, seed_demo
 from app.services.affiliate import AffiliateLinkService
+from app.services.advisor import AdvisorService
 from app.services.configurator import ConfiguratorService
 from app.services.finder import FinderService
 from app.services.product_data import ProductDataService
@@ -31,6 +33,7 @@ class Container:
     product_data: ProductDataService
     finder: FinderService
     configurator: ConfiguratorService
+    advisor: AdvisorService
     llm: LLMProvider
     _closers: list[Any] = field(default_factory=list)
 
@@ -52,6 +55,18 @@ def build_provider(settings: Settings) -> ProductProvider:
         )
     # Il mock conosce il catalogo demo per generare prezzi plausibili.
     return MockProductProvider(demo_catalog(), ttl_hours=settings.provider_cache_ttl_hours)
+
+
+def build_llm(settings: Settings) -> LLMProvider:
+    if settings.llm_provider == "none":
+        return NullLLMProvider()
+    from app.ai.providers import GeminiProvider, OpenAIProvider
+
+    key = _secret(settings.llm_api_key) or ""
+    model = settings.llm_model or ""
+    if settings.llm_provider == "openai":
+        return OpenAIProvider(key, model)
+    return GeminiProvider(key, model)
 
 
 async def build_container(settings: Settings, repos: Repositories | None = None) -> Container:
@@ -76,14 +91,18 @@ async def build_container(settings: Settings, repos: Repositories | None = None)
     provider = build_provider(settings)
     affiliate = AffiliateLinkService(settings.amazon_partner_tag, settings.amazon_marketplace)
     product_data = ProductDataService(provider, repos.snapshots, affiliate)
+    llm = build_llm(settings)
+    finder = FinderService(repos, product_data)
+    configurator = ConfiguratorService(repos, product_data)
     return Container(
         settings=settings,
         repos=repos,
         provider=provider,
         affiliate=affiliate,
         product_data=product_data,
-        finder=FinderService(repos, product_data),
-        configurator=ConfiguratorService(repos, product_data),
-        llm=NullLLMProvider(),
+        finder=finder,
+        configurator=configurator,
+        advisor=AdvisorService(repos, finder, configurator, AdvisorLLM(llm)),
+        llm=llm,
         _closers=closers,
     )

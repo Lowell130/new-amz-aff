@@ -48,6 +48,7 @@ class FinderOption(BaseModel):
     value: str
     label: str
     hint: str | None = None
+    keywords: list[str] = Field(default_factory=list)  # per l'estrattore deterministico dell'Advisor
     patch: ProfilePatch = Field(default_factory=ProfilePatch)
 
 
@@ -68,6 +69,7 @@ class FinderQuestion(BaseModel):
     unit: str | None = None
     maps_to: str | None = None  # es. "budget_max" per range/number
     patch_if_true: ProfilePatch | None = None  # per boolean
+    keywords_true: list[str] = Field(default_factory=list)  # per boolean (estrattore Advisor)
     default: Any = None
 
 
@@ -128,6 +130,9 @@ class FinderDefinition(BaseModel):
     budget_tolerance: float = 0.15  # oltre budget*(1+tol) il prodotto è escluso
     seo: FinderSEO
     published: bool = True
+    # AI Advisor: parole che indicano questo strumento e domande indispensabili da chiedere
+    advisor_keywords: list[str] = Field(default_factory=list)
+    advisor_key_questions: list[str] = Field(default_factory=lambda: ["use", "budget"])
 
     def scoring_config(self) -> ScoringConfig:
         return ScoringConfig(

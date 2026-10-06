@@ -26,6 +26,14 @@ useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/` }] })
       </p>
     </section>
 
+    <NuxtLink
+      to="/consulente"
+      class="mb-5 block rounded-2xl bg-brand-600 p-6 text-white shadow-sm transition hover:bg-brand-700"
+    >
+      <h2 class="text-xl font-semibold">Non sai da dove iniziare? Chiedi al consulente</h2>
+      <p class="mt-1 text-brand-50">Scrivi con parole tue cosa ti serve e quanto vuoi spendere.</p>
+    </NuxtLink>
+
     <section class="grid gap-5 sm:grid-cols-2">
       <NuxtLink
         v-for="f in finders ?? []"

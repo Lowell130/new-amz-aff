@@ -72,3 +72,23 @@ def test_configurator_budget_too_low(client):
     r = client.post("/api/configurators/kit-trekking/build", json={"answers": {"use": "multi_day", "experience": "beginner", "weather": "dry", "budget": 100}})
     assert r.status_code == 422
     assert "servono almeno" in r.json()["detail"]
+
+
+def test_advisor_api(client):
+    r = client.post("/api/advisor/session").json()
+    sid = r["session_id"]
+    assert r["quick_replies"]
+    r = client.post("/api/advisor/message", json={"session_id": sid, "text": "Ho 400 euro e non ho nulla per fare trekking"}).json()
+    assert r["quick_replies"][0]["question_id"] == "use"
+    r = client.post("/api/advisor/message", json={"session_id": sid, "quick_reply": {"question_id": "use", "value": "day_hike"}}).json()
+    assert r["configuration"]["total_valid"] <= 400
+    assert r["open_url"].startswith("/configura/kit-trekking?c=")
+    assert client.post("/api/advisor/message", json={"session_id": sid}).status_code == 422
+    assert client.post("/api/advisor/message", json={"session_id": "x", "text": "ciao"}).status_code == 404
+
+
+def test_gemini_schema_conversion():
+    from app.ai.providers import to_gemini_schema
+
+    out = to_gemini_schema({"type": ["string", "null"], "enum": ["a", None]})
+    assert out == {"type": "STRING", "nullable": True, "enum": ["a"]}

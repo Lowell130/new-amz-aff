@@ -65,7 +65,12 @@ export function useConfigurator(detail: ConfiguratorDetail) {
   async function load(id: string) {
     if (result.value?.session_id === id) return
     const res = await run(() => api.get<ConfigurationOut>(`/api/configuration/${id}`))
-    if (res) result.value = res
+    if (res) {
+      result.value = res
+      // modulo già compilato con le risposte della configurazione (es. arrivando dall'AI Advisor)
+      answers.value = { ...answers.value, ...res.answers }
+      if (res.include_optional) optional.value = [...res.include_optional]
+    }
   }
 
   async function edit() {

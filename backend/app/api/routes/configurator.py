@@ -92,6 +92,8 @@ def _out(pc: PresentedConfiguration) -> ConfigurationOut:
         residual=pc.residual,
         over_budget=s.result.over_budget,
         generated_at=s.result.generated_at,
+        answers=s.answers,
+        include_optional=s.include_optional,
     )
 
 

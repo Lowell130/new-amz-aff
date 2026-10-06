@@ -5,7 +5,7 @@ Amazon è il canale di monetizzazione (link affiliati conformi), non il cuore de
 
 Stack: **Nuxt 4 + Tailwind 4** (frontend SSR) · **FastAPI + PyMongo Async** (backend) · **MongoDB**.
 
-> Stato: Fasi 1–7 della roadmap: Product Finder e Configuratore kit (vedi `docs/ROADMAP.md`).
+> Stato: Fasi 1–8 della roadmap: Product Finder, Configuratore kit e AI Advisor (vedi `docs/ROADMAP.md`).
 > Funziona **senza credenziali Amazon e senza MongoDB**: catalogo demo di 195 prodotti sintetici
 > (scarpe, zaini, giacche, bastoncini, frontali; marchi inventati) e prezzi simulati.
 
@@ -36,7 +36,9 @@ npm install
 npm run dev
 ```
 
-Apri http://localhost:3000 → "Scarpe da trekking" (Product Finder) oppure "Kit trekking" (Configuratore).
+Apri http://localhost:3000 → "Scarpe da trekking" (Product Finder), "Kit trekking" (Configuratore)
+oppure "Consulente" (AI Advisor). L'Advisor funziona anche senza chiavi LLM (estrattore a regole); per
+usare OpenAI o Gemini imposta `LLM_PROVIDER`, `LLM_API_KEY` e `LLM_MODEL` in `backend/.env`.
 
 ### 3. (Opzionale) MongoDB reale
 
@@ -58,7 +60,9 @@ pytest
 I test coprono: motore di scoring (20 profili diversi, nessun vincitore fisso, motivazioni basate sui dati),
 flusso del questionario (domande condizionali, modifica risposte), link affiliati, cache con scadenza 24h,
 funzionamento senza provider, configuratore (budget mai superato, incompatibilità, riproducibilità,
-kit diversi al variare del budget, sostituzioni), API end-to-end.
+kit diversi al variare del budget, sostituzioni), AI Advisor (estrazione, una domanda alla volta,
+fallback quando l'LLM fallisce, spiegazioni con prezzi inventati scartate, nessun testo utente salvato),
+API end-to-end.
 
 ## Struttura
 
@@ -71,13 +75,13 @@ backend/app
   repositories/   accesso dati: MongoDB e in-memory
   providers/      ProductProvider: Mock (attivo) e Amazon Creators (Fase 11)
   scoring/        motore di scoring, logica questionario, selezione risultati, configuratore
-  services/       finder, dati prodotto/cache, AffiliateLinkService
-  ai/             interfaccia LLM astratta (Fase 8)
+  services/       finder, configuratore, advisor, dati prodotto/cache, AffiliateLinkService
+  ai/             LLM: interfaccia, provider OpenAI/Gemini, estrazione e spiegazioni dell'Advisor
   seed/           dataset demo trekking (finder + kit)
 frontend/app
-  pages/          /, /trova/[slug], /configura/[slug], /come-scegliere/[slug], informativa
-  components/     finder/*, configurator/*, recommendation/*, ProductPriceCta, AffiliateDisclosure
-  composables/    useApi, useFinder, useConfigurator, useTrack
+  pages/          /, /trova/[slug], /configura/[slug], /consulente, /come-scegliere/[slug], informativa
+  components/     finder/*, configurator/*, advisor/*, recommendation/*, ProductPriceCta, AffiliateDisclosure
+  composables/    useApi, useFinder, useConfigurator, useAdvisor, useTrack
 ```
 
 ## Regole di conformità già implementate
@@ -88,6 +92,7 @@ frontend/app
 - Il prezzo è mostrato solo se lo snapshot è valido, con **data e ora di aggiornamento** e l'avviso che può variare.
 - Se il provider non risponde il sito funziona comunque, senza prezzi.
 - Disclosure affiliato nel footer, vicino ai pulsanti e in una pagina dedicata.
-- I risultati personali (`/trova/...?s=`) sono `noindex`; tracking anonimo con whitelist dei campi.
+- I risultati personali (`/trova/...?s=`, `/configura/...?c=`) sono `noindex`; tracking anonimo con whitelist dei campi.
+- AI Advisor: i prodotti li scelgono sempre i motori deterministici; il testo dei messaggi non viene salvato.
 
 Verifica comunque i requisiti aggiornati sulle pagine ufficiali del Programma Affiliazione Amazon prima del lancio.

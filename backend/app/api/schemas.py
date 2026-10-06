@@ -224,3 +224,42 @@ class ConfigurationOut(BaseModel):
     residual: float | None  # solo se tutti i prezzi sono aggiornati
     over_budget: bool
     generated_at: datetime
+    answers: dict[str, Any] = Field(default_factory=dict)  # per ricaricare il modulo già compilato
+    include_optional: list[str] | None = None
+
+
+# ---------------------------------------------------------------------- advisor
+class QuickReplyOut(BaseModel):
+    question_id: str
+    value: Any
+    label: str
+
+
+class QuickReplyIn(BaseModel):
+    question_id: str = Field(max_length=64)
+    value: Any = None
+
+
+class AdvisorMessageIn(BaseModel):
+    session_id: str = Field(max_length=64)
+    text: str | None = Field(default=None, max_length=1000)
+    quick_reply: QuickReplyIn | None = None
+
+
+class AdvisorTargetOut(BaseModel):
+    kind: str
+    slug: str
+    title: str
+
+
+class AdvisorReplyOut(BaseModel):
+    session_id: str
+    text: str
+    text_source: str
+    quick_replies: list[QuickReplyOut]
+    understood: list[str]
+    target: AdvisorTargetOut | None
+    finder_result: ResultOut | None = None
+    configuration: ConfigurationOut | None = None
+    open_url: str | None = None
+    open_label: str | None = None

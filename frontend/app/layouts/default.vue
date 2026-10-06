@@ -8,9 +8,10 @@ const siteName = config.public.siteName
     <header class="border-b border-stone-200 bg-white">
       <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <NuxtLink to="/" class="text-lg font-bold text-brand-700">{{ siteName }}</NuxtLink>
-        <div class="flex gap-5">
+        <div class="flex flex-wrap justify-end gap-x-4 gap-y-1">
           <NuxtLink to="/trova/scarpe-trekking" class="text-sm font-medium text-stone-600 hover:text-brand-700">Trova la scarpa</NuxtLink>
           <NuxtLink to="/configura/kit-trekking" class="text-sm font-medium text-stone-600 hover:text-brand-700">Componi il kit</NuxtLink>
+          <NuxtLink to="/consulente" class="text-sm font-medium text-stone-600 hover:text-brand-700">Consulente</NuxtLink>
         </div>
       </nav>
     </header>

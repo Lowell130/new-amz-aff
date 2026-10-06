@@ -98,8 +98,11 @@ def template() -> ConfigurationTemplate:
                       priority_rules=[R_LIGHT, R_LUMEN], attribute_labels={"lumens": "Lumen", "weight_g": "Peso (g)"},
                       why="Indispensabile se rischi di rientrare col buio."),
     ]
+    trekking.apply_advisor_keywords(inputs)
     return ConfigurationTemplate(
         slug="kit-trekking",
+        advisor_keywords=["kit", "attrezzatura", "equipaggiamento", "tutto il necessario", "non ho nulla",
+                          "non ho praticamente nulla", "setup", "cosa mi serve", "cosa serve", "da zero"],
         title="Kit trekking",
         short_description="Scarpe, zaino, giacca e accessori: il kit completo entro il tuo budget.",
         inputs=inputs,

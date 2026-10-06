@@ -52,7 +52,7 @@ class ConfiguratorService:
 
     # ---------------------------------------------------------------- input
     @staticmethod
-    def validate_answers(t: ConfigurationTemplate, answers: dict[str, Any]) -> dict[str, Any]:
+    def validate_answers(t: ConfigurationTemplate, answers: dict[str, Any], allow_partial: bool = False) -> dict[str, Any]:
         clean: dict[str, Any] = {}
         # le domande visibili dipendono dalle risposte già validate
         for q in sorted(t.inputs, key=lambda q: q.order):
@@ -62,7 +62,7 @@ class ConfiguratorService:
                 clean[q.id] = flow.validate_answer(q, answers[q.id])
             elif q.default is not None:
                 clean[q.id] = flow.validate_answer(q, q.default)
-            elif q.required:
+            elif q.required and not allow_partial:
                 raise flow.InvalidAnswer(f"Manca la risposta: {q.question}")
         return clean
 
@@ -86,9 +86,11 @@ class ConfiguratorService:
         return out
 
     # --------------------------------------------------------------- azioni
-    async def build(self, slug: str, answers: dict[str, Any], include_optional: list[str] | None) -> ConfigurationSession:
+    async def build(
+        self, slug: str, answers: dict[str, Any], include_optional: list[str] | None, allow_partial: bool = False
+    ) -> ConfigurationSession:
         t = await self.get_template(slug)
-        clean = self.validate_answers(t, answers)
+        clean = self.validate_answers(t, answers, allow_partial)
         optional = self.validate_optional(t, include_optional)
         profile = flow.build_profile(t, clean)  # type: ignore[arg-type]
         if not profile.budget_max:

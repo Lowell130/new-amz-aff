@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from app.models.advisor import AdvisorSession
 from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
@@ -47,6 +48,11 @@ class ConfigSessionRepository(Protocol):
     async def save(self, session: ConfigurationSession) -> None: ...
 
 
+class AdvisorSessionRepository(Protocol):
+    async def get(self, session_id: str) -> AdvisorSession | None: ...
+    async def save(self, session: AdvisorSession) -> None: ...
+
+
 class EventRepository(Protocol):
     async def add(self, event: TrackEvent) -> None: ...
     async def count_by_type(self) -> dict[str, int]: ...
@@ -61,3 +67,4 @@ class Repositories:
     events: EventRepository
     configurators: ConfiguratorRepository
     config_sessions: ConfigSessionRepository
+    advisor_sessions: AdvisorSessionRepository

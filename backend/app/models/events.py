@@ -18,6 +18,7 @@ EventType = Literal[
     "configuration_completed",
     "advisor_started",
     "advisor_message",
+    "requirements_extracted",
     "recommendation_generated",
 ]
 

@@ -164,4 +164,26 @@ export interface ConfigurationOut {
   residual: number | null
   over_budget: boolean
   generated_at: string
+  answers: Record<string, unknown>
+  include_optional: string[] | null
+}
+
+// ---------------------------------------------------------------------- advisor
+export interface QuickReply {
+  question_id: string
+  value: unknown
+  label: string
+}
+
+export interface AdvisorReply {
+  session_id: string
+  text: string
+  text_source: 'llm' | 'template'
+  quick_replies: QuickReply[]
+  understood: string[]
+  target: { kind: 'finder' | 'configurator'; slug: string; title: string } | null
+  finder_result: ResultOut | null
+  configuration: ConfigurationOut | null
+  open_url: string | null
+  open_label: string | null
 }

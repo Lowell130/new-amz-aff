@@ -46,6 +46,12 @@ async def ensure_indexes(db: AsyncDatabase) -> None:
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=SESSION_TTL_SECONDS, name="ttl_created_at"),
         ]
     )
+    await db.advisor_sessions.create_indexes(
+        [
+            IndexModel([("session_id", ASCENDING)], unique=True, name="session_id"),
+            IndexModel([("created_at", ASCENDING)], expireAfterSeconds=SESSION_TTL_SECONDS, name="ttl_created_at"),
+        ]
+    )
     await db.click_events.create_indexes(
         [
             IndexModel([("type", ASCENDING), ("ts", DESCENDING)], name="type_ts"),

@@ -32,6 +32,39 @@ USE_CASE_LABELS = {
 }
 EXPERIENCE_LABELS = {"beginner": "Principiante", "intermediate": "Intermedio", "expert": "Esperto"}
 
+# Parole chiave (senza accenti, minuscole) usate dall'estrattore deterministico dell'AI Advisor
+# quando non c'è un LLM configurato. Chiave: (id domanda, valore opzione).
+ADVISOR_KEYWORDS: dict[tuple[str, str], list[str]] = {
+    ("use", "walk"): ["passeggiat", "sentieri facili", "collin", "parco", "camminat", "facile"],
+    ("use", "day_hike"): ["escursion", "in giornata", "gita", "giornata in montagna", "sentieri di montagna", "trekking in giornata"],
+    ("use", "multi_day"): ["piu giorni", "rifugio", "rifugi", "zaino pesante", "traversat", "alta via", "giorni di cammino", "trekking di"],
+    ("use", "alpine"): ["alta montagna", "ghiacciai", "ghiacciaio", "ramponi", "alpinism", "4000", "vetta"],
+    ("experience", "beginner"): ["principiante", "prima volta", "iniziare", "inizio", "non ho esperienza", "alle prime armi", "neofita", "non ho praticamente nulla", "non ho nulla"],
+    ("experience", "intermediate"): ["intermedi", "qualche esperienza", "qualche anno", "ogni tanto"],
+    ("experience", "expert"): ["espert", "molta esperienza", "da anni", "anni che"],
+    ("weather", "dry"): ["bel tempo", "asciutto", "estate", "d'estate", "con il sole"],
+    ("weather", "mixed"): ["variabile", "a volte piove", "erba bagnata", "qualche pioggia"],
+    ("weather", "wet"): ["pioggia", "piove spesso", "fango", "neve", "bagnato", "impermeabil"],
+    ("ankle", "low"): ["scarpa bassa", "basse", "taglio basso"],
+    ("ankle", "mid"): ["taglio medio", "mid", "media altezza"],
+    ("ankle", "high"): ["scarponcin", "scarpone", "alta alla caviglia", "taglio alto", "caviglia"],
+    ("crampons", "auto"): ["ramponi automatici"],
+    ("crampons", "semi"): ["semiautomatic", "semi-automatic", "semi automatic"],
+    ("priorities", "lightweight"): ["legger"],
+    ("priorities", "comfort"): ["comod", "comfort", "confortevol"],
+    ("priorities", "grip"): ["aderen", "grip", "non scivol"],
+    ("priorities", "durability"): ["durat", "robust", "resistent", "che duri"],
+}
+BOOLEAN_KEYWORDS: dict[str, list[str]] = {"wide": ["piede largo", "pianta larga", "piedi larghi"]}
+
+
+def apply_advisor_keywords(questions) -> None:
+    for q in questions:
+        for o in q.options:
+            o.keywords = ADVISOR_KEYWORDS.get((q.id, o.value), [])
+        if q.type == "boolean":
+            q.keywords_true = BOOLEAN_KEYWORDS.get(q.id, [])
+
 
 def finder_definition() -> FinderDefinition:
     q = [
@@ -174,8 +207,10 @@ def finder_definition() -> FinderDefinition:
              "a": "Dipende dall'uso e dalla costruzione: la suola è di solito la prima parte a consumarsi."},
         ],
     )
+    apply_advisor_keywords(q)
     return FinderDefinition(
         slug="scarpe-trekking",
+        advisor_keywords=["scarp", "scarpon", "calzatur", "stivalett"],
         category=CATEGORY,
         title="Scarpe da trekking",
         short_description="Trova la scarpa giusta in base a sentieri, meteo, esperienza e budget.",

@@ -45,6 +45,8 @@ class ConfigurationTemplate(BaseModel):
     weights: ScoringWeights = Field(default_factory=ScoringWeights)
     seo: ConfigurationSEO
     published: bool = True
+    advisor_keywords: list[str] = Field(default_factory=list)
+    advisor_key_questions: list[str] = Field(default_factory=lambda: ["use", "budget"])
 
     # compatibilità con le funzioni del flow (che leggono .questions)
     @property

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from app.models.advisor import AdvisorSession
 from app.models.configurator import ConfigurationSession, ConfigurationTemplate
 from app.models.events import TrackEvent
 from app.models.finder import FinderDefinition, FinderSession
@@ -107,6 +108,18 @@ class MemoryConfigSessionRepository:
         self._items[session.session_id] = session.model_copy(deep=True)
 
 
+class MemoryAdvisorSessionRepository:
+    def __init__(self) -> None:
+        self._items: dict[str, AdvisorSession] = {}
+
+    async def get(self, session_id: str) -> AdvisorSession | None:
+        s = self._items.get(session_id)
+        return s.model_copy(deep=True) if s else None
+
+    async def save(self, session: AdvisorSession) -> None:
+        self._items[session.session_id] = session.model_copy(deep=True)
+
+
 class MemoryEventRepository:
     def __init__(self) -> None:
         self.items: list[TrackEvent] = []
@@ -127,4 +140,5 @@ def memory_repositories() -> Repositories:
         events=MemoryEventRepository(),
         configurators=MemoryConfiguratorRepository(),
         config_sessions=MemoryConfigSessionRepository(),
+        advisor_sessions=MemoryAdvisorSessionRepository(),
     )
